@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Самородок</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f5f4;
+      --panel: #ffffff;
+      --border: #d6d3d1;
+      --text: #1c1917;
+      --muted: #78716c;
+      --accent: #9a7b11;
+      --ok: #16a34a;
+      --warn: #ca8a04;
+      --err: #dc2626;
+      --row-alt: #fafaf9;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 20px;
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .recruiter-pool-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    h1 {
+      margin: 0 0 0.35rem;
+      font-weight: 600;
+      font-size: 1.05rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; padding-top: 0.45rem; }
+    /* Подпись строго по вертикали по центру блока бейджей (без padding-top у label) */
+    .row-with-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.75em;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .row-with-badges > label {
+      padding-top: 0;
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      align-self: center;
+    }
+    .row-with-badges .badges {
+      margin: 0;
+      align-self: center;
+      align-items: center;
+    }
+    .row-with-badges > .badge,
+    .row-with-badges > .sort-btn {
+      align-self: center;
+    }
+    input[type="number"], button {
+      font: inherit;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 0.5rem 0.65rem;
+    }
+    input[type="number"] { width: 5rem; }
+    button {
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      border-color: var(--accent);
+      color: var(--accent);
+      background: transparent;
+      padding: 0.55rem 1rem;
+    }
+    button:hover { background: rgba(154, 123, 17, 0.1); }
+    #run {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    #run:hover { background: #7d6310; }
+    .state-timer {
+      white-space: pre-line;
+      text-align: center;
+      max-width: min(100%, 26rem);
+      line-height: 1.35;
+    }
+    /* --- индикатор проверки: прозрачный куб с тонкими рёбрами --- */
+    .nugget-loader[hidden] {
+      display: none !important;
+    }
+    .nugget-loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.15rem;
+    }
+    .nugget-loader__hint {
+      margin: 0;
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      max-width: 26rem;
+      line-height: 1.3;
+      animation: nugget-hint-fade 2.8s ease-in-out infinite;
+    }
+    @keyframes nugget-hint-fade {
+      0%, 100% { opacity: 0.65; }
+      50% { opacity: 1; }
+    }
+    .nugget-loader__stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 3rem;
+      padding: 0.2rem 0;
+    }
+    .wire-cube-scene {
+      width: 2.6rem;
+      height: 2.6rem;
+      perspective: 110px;
+      perspective-origin: 50% 45%;
+    }
+    .wire-cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: wire-cube-spin 7s linear infinite;
+    }
+    @keyframes wire-cube-spin {
+      from { transform: rotateX(-22deg) rotateY(0deg); }
+      to { transform: rotateX(-22deg) rotateY(360deg); }
+    }
+    .wire-cube__face {
+      position: absolute;
+      --s: 1.75rem;
+      --z: calc(var(--s) / 2);
+      width: var(--s);
+      height: var(--s);
+      left: 50%;
+      top: 50%;
+      margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+      box-sizing: border-box;
+      border: 1px solid var(--accent);
+      background: transparent;
+      backface-visibility: visible;
+      opacity: 0.92;
+    }
+    .wire-cube__face--front  { transform: rotateY(0deg) translateZ(var(--z)); }
+    .wire-cube__face--back   { transform: rotateY(180deg) translateZ(var(--z)); }
+    .wire-cube__face--right  { transform: rotateY(90deg) translateZ(var(--z)); }
+    .wire-cube__face--left   { transform: rotateY(-90deg) translateZ(var(--z)); }
+    .wire-cube__face--top    { transform: rotateX(90deg) translateZ(var(--z)); }
+    .wire-cube__face--bottom { transform: rotateX(-90deg) translateZ(var(--z)); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 0.25rem 0 0.75rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.55rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+    .badge:hover { border-color: var(--accent); }
+    .badge.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(154, 123, 17, 0.1);
+    }
+    .timeline {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 0.65rem 0.85rem;
+      min-height: calc(4 * 1.45em + 1.3rem);
+      max-height: calc(4 * 1.45em + 1.3rem);
+      overflow-y: auto;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .timeline div { margin-bottom: 0.35rem; word-break: break-word; }
+    .timeline .t { color: var(--accent); }
+    .timeline .e { color: var(--err); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+    }
+    thead th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 0.75rem;
+    }
+    thead th .th-sub {
+      display: block;
+      margin-top: 0.25rem;
+      font-weight: 500;
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
+      line-height: 1.35;
+      text-transform: none;
+      color: var(--muted);
+    }
+    tbody td {
+      border-bottom: 1px solid var(--border);
+      padding: 0.55rem 0.75rem;
+      vertical-align: top;
+    }
+    tbody tr:nth-child(even) { background: var(--row-alt); }
+    .score { font-weight: 600; color: var(--accent); }
+    .sec { color: var(--muted); font-size: 0.85em; }
+    .fit-yes { color: var(--ok); }
+    .fit-no { color: var(--warn); }
+    .fit-unk { color: var(--muted); }
+    .explain-row td { border-bottom: 1px solid var(--border); vertical-align: top; }
+    .explain {
+      color: var(--muted);
+      font-size: 0.78rem;
+      padding: 0.3rem 0.75rem 0.55rem;
+      line-height: 1.4;
+      white-space: pre-line;
+      text-align: center;
+    }
+    .explain-from-score-col {
+      padding: 0.65rem 1rem 0.65rem;
+      border-top: 1px dashed rgba(214, 211, 209, 0.9);
+    }
+    .explain-lead {
+      display: block;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+    .sum {
+      margin-top: 1rem;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .sum strong { color: var(--accent); }
+    a.pdf-link {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(154, 123, 17, 0.35);
+    }
+    a.pdf-link:hover { border-bottom-color: var(--accent); }
+
+    /* --- навигация --- */
+    .nav {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1.25rem;
+    }
+    .nav-btn {
+      padding: 0.5rem 1.2rem;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-right: -1px;
+    }
+    .nav-btn:hover { color: var(--text); }
+    .nav-btn.active {
+      background: var(--panel);
+      color: var(--accent);
+      border-color: var(--border);
+      border-bottom: 1px solid var(--panel);
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* --- анализ: группировка --- */
+    .candidate-group {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+    }
+    .check-row-date {
+      flex-shrink: 0;
+      color: var(--muted);
+      font-size: 0.65rem;
+      line-height: 1.2;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .check-entry {
+      padding: 0.4rem 0;
+      border-top: 1px solid var(--row-alt);
+      font-size: 0.78rem;
+    }
+    .check-entry:first-of-type { border-top: none; }
+    .check-entry-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .check-summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35em 0.5rem;
+      min-width: 0;
+      flex: 1;
+    }
+    .check-summary .pdf-link {
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.85rem;
+      word-break: break-word;
+    }
+    .check-sep {
+      color: var(--muted);
+      user-select: none;
+      font-weight: 500;
+    }
+    .check-summary .check-score {
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.85rem;
+      min-width: 0;
+    }
+    .check-vac-paren {
+      color: var(--muted);
+    }
+    .check-entry-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .check-explain-block {
+      box-sizing: border-box;
+      width: 100%;
+      margin-top: 0.4rem;
+      padding: 0.85rem 0;
+      border-top: 1px dashed rgba(214, 211, 209, 0.9);
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.45;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+    .check-explain-text {
+      width: 100%;
+      min-width: 0;
+      white-space: pre-wrap;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+    .check-explain-block .explain-lead {
+      margin-top: 0;
+      margin-bottom: 0.4rem;
+      width: 100%;
+      text-align: left;
+    }
+    .check-delete {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 1.65rem;
+      height: 1.65rem;
+      padding: 0;
+      margin: 0;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.15rem;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 0;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 500;
+      vertical-align: middle;
+    }
+    .check-delete:hover {
+      color: var(--err);
+      border-color: var(--border);
+      background: rgba(220, 38, 38, 0.06);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="nav">
+      <button type="button" class="nav-btn active" data-page="recruiter">Анализ</button>
+      <button type="button" class="nav-btn" data-page="analysis">Результат</button>
+    </div>
+
+    <header>
+      <div class="header-row">
+        <div>
+          <h1>Самородок · скоринг по вакансии</h1>
+          <div class="sub" id="appMeta" style="font-size:0.5rem">Разработка ИТЦ. v.2.1.1</div>
+        </div>
+        <div id="recruiterPoolBar" class="recruiter-pool-bar">
+          <label for="take" style="padding:0">Резюме из пула</label>
+          <input id="take" type="number" min="1" max="1000" value="5" />
+          <span id="totalCount" class="sub"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========== АНАЛИЗ ========== -->
+    <div id="page-recruiter" class="page active">
+      <div class="row-with-badges">
+        <label>Вакансия</label>
+        <div class="badges" id="vacancyBadges" aria-label="Выбор вакансии"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.4em;margin-bottom:1rem">
+        <div id="nuggetLoader" class="nugget-loader" hidden aria-hidden="true">
+          <p class="nugget-loader__hint">Идёт автоматическая проверка резюме по выбранной вакансии; пожалуйста, подождите.</p>
+          <div class="nugget-loader__stage">
+            <div class="wire-cube-scene" aria-hidden="true">
+              <div class="wire-cube">
+                <div class="wire-cube__face wire-cube__face--front"></div>
+                <div class="wire-cube__face wire-cube__face--back"></div>
+                <div class="wire-cube__face wire-cube__face--right"></div>
+                <div class="wire-cube__face wire-cube__face--left"></div>
+                <div class="wire-cube__face wire-cube__face--top"></div>
+                <div class="wire-cube__face wire-cube__face--bottom"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="run">Подобрать специалиста</button>
+        <button type="button" id="stop" style="display:none;border-color:var(--err);color:var(--err)">Остановить</button>
+        <span id="state" class="sub state-timer" style="font-size:0.55rem"></span>
+      </div>
+
+      <label style="display:block;margin:1.25rem 0 0.5rem">События</label>
+      <div id="log" class="timeline" aria-live="polite"></div>
+
+      <label style="display:block;margin:0 0 0.5rem">Результаты</label>
+      <table>
+        <thead>
+          <tr>
+            <th>PDF</th>
+            <th>Соответствие вакансии</th>
+            <th>Подходит на вакансию</th>
+            <th>Время обработки ИИ, с</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="summary" class="sum" style="display:none"></div>
+    </div>
+
+    <!-- ========== РЕЗУЛЬТАТ ========== -->
+    <div id="page-analysis" class="page">
+      <div class="row-with-badges">
+        <label>Фильтр по вакансии</label>
+        <div class="badges" id="filterBadges"></div>
+        <button type="button" id="filterAll" class="badge active">Все</button>
+      </div>
+      <div class="row-with-badges">
+        <label>Сортировка</label>
+        <button type="button" class="badge active sort-btn" data-sort="score-desc" title="По баллу соответствия вакансии (0–100), по убыванию">Соответствие ↓</button>
+        <button type="button" class="badge sort-btn" data-sort="score-asc" title="По баллу соответствия вакансии (0–100), по возрастанию">Соответствие ↑</button>
+        <button type="button" class="badge sort-btn" data-sort="date-desc">Новые</button>
+        <button type="button" class="badge sort-btn" data-sort="date-asc">Старые</button>
+        <button type="button" class="badge sort-btn" data-sort="name-asc">Имя А→Я</button>
+      </div>
+      <div id="analysisContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- навигация ---
+    const recruiterPoolBar = document.getElementById("recruiterPoolBar");
+    const navBtns = document.querySelectorAll(".nav-btn");
+    navBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        navBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+        document.getElementById("page-" + btn.dataset.page).classList.add("active");
+        const isAnalysis = btn.dataset.page === "analysis";
+        if (recruiterPoolBar) {
+          recruiterPoolBar.hidden = isAnalysis;
+          recruiterPoolBar.setAttribute("aria-hidden", isAnalysis ? "true" : "false");
+        }
+        if (isAnalysis) loadAnalysis();
+      });
+    });
+
+    // --- общие ---
+    const $log = document.getElementById("log");
+    const $rows = document.getElementById("rows");
+    const $summary = document.getElementById("summary");
+    const $run = document.getElementById("run");
+    const $stop = document.getElementById("stop");
+    const $state = document.getElementById("state");
+    const $take = document.getElementById("take");
+    const $badges = document.getElementById("vacancyBadges");
+    const $filterBadges = document.getElementById("filterBadges");
+    const $filterAll = document.getElementById("filterAll");
+    const $analysisContent = document.getElementById("analysisContent");
+    const $nuggetLoader = document.getElementById("nuggetLoader");
+    let selectedVacancyId = null;
+    let abortController = null;
+    let analysisFilter = null; // null = все
+    let analysisSort = "score-desc";
+    let cachedResults = null;
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+    function escapeAttr(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+    }
+
+    const SCORE_HINT = "Соответствие резюме требованиям вакансии по шкале от 0 до 100 баллов (чем выше, тем ближе к требованиям).";
+
+    function scoreBallWord(n) {
+      const v = Math.round(Math.abs(Number(n)));
+      const k = v % 100;
+      if (k >= 11 && k <= 14) return "баллов";
+      const k1 = k % 10;
+      if (k1 === 1) return "балл";
+      if (k1 >= 2 && k1 <= 4) return "балла";
+      return "баллов";
+    }
+
+    /** «10 баллов» с правильным склонением. */
+    function formatScorePointsHtml(n) {
+      return `${escapeHtml(String(n))} ${scoreBallWord(n)}`;
+    }
+
+    /** То же для лога (plain text). */
+    function formatScorePointsPlain(n) {
+      if (n == null || n === "") return "?";
+      const x = Number(n);
+      if (!Number.isFinite(x)) return String(n);
+      return `${x} ${scoreBallWord(x)}`;
+    }
+
+    /** HTML ячейки балла: «N баллов» или «—». */
+    function formatScoreTableCell(score) {
+      const title = ` title="${escapeAttr(SCORE_HINT)}"`;
+      if (score == null || score === "" || (typeof score === "number" && !Number.isFinite(score))) {
+        return `<td class="score"${title}>—</td>`;
+      }
+      const n = Number(score);
+      if (!Number.isFinite(n)) {
+        return `<td class="score"${title}>${escapeHtml(String(score))}</td>`;
+      }
+      return `<td class="score"${title}>${formatScorePointsHtml(n)}</td>`;
+    }
+
+    /** Балл для строки «Результат»: «N баллов» (подсказка в title). */
+    function formatScoreInlineHtml(score) {
+      const t = ` title="${escapeAttr(SCORE_HINT)}"`;
+      if (score == null || score === "" || (typeof score === "number" && !Number.isFinite(score))) {
+        return `<span class="check-score"${t}>—</span>`;
+      }
+      const n = Number(score);
+      if (!Number.isFinite(n)) {
+        return `<span class="check-score"${t}>${escapeHtml(String(score))}</span>`;
+      }
+      return `<span class="check-score"${t}>${formatScorePointsHtml(n)}</span>`;
+    }
+
+    /**
+     * Текст обоснования для вставки в HTML: экранирование + переносы.
+     * Без \\n — разбивка по концу предложения (в таблице «Анализ» — с новой строки).
+     * opts.flow — одна линия по ширине блока («Результат»): без искусственных переносов между предложениями.
+     */
+    function formatExplanationHtml(s, opts) {
+      let t = String(s ?? "").replace(/\r\n/g, "\n").trim();
+      if (!t) return "";
+      const flow = Boolean(opts && opts.flow);
+      if (flow) {
+        t = t.replace(/\s+/g, " ");
+      } else if (t.includes("\n")) {
+        return escapeHtml(t);
+      }
+      const parts = t.split(/(?<=[.!?…])\s+(?=[А-ЯЁ(«"„])/u).filter(Boolean);
+      if (parts.length > 1) {
+        return parts.map((p) => escapeHtml(p)).join(flow ? " " : "\n");
+      }
+      return escapeHtml(t);
+    }
+
+    /** Секунды → «M мин S.S с» или «S.S с» (fd — знаков после запятой у секунд). */
+    function formatMinSec(sec, fd = 0) {
+      const s = Math.max(0, Number(sec) || 0);
+      const m = Math.floor(s / 60);
+      const rest = s - m * 60;
+      const secPart = fd > 0 ? rest.toFixed(fd) : String(Math.floor(rest));
+      if (m > 0) return `${m} мин ${secPart} с`;
+      return `${secPart} с`;
+    }
+
+    // --- вкладка «Анализ» ---
+    function logLine(cls, text) {
+      const d = document.createElement("div");
+      if (cls) d.className = cls;
+      d.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+      $log.appendChild(d);
+      $log.scrollTop = $log.scrollHeight;
+    }
+
+    function addRow(r) {
+      const tr = document.createElement("tr");
+      const fitCls = r.value === true ? "fit-yes" : r.value === false ? "fit-no" : "fit-unk";
+      const fitLabel = r.value === true ? "подходит" : r.value === false ? "не подходит" : "—";
+      const sec = r.cached ? "кэш" : r.seconds != null ? r.seconds.toFixed(2) : "—";
+      const pdfTd = r.pdfUrl
+        ? `<a class="pdf-link" href="${escapeAttr(r.pdfUrl)}" download="${escapeAttr(r.file)}" target="_blank" rel="noopener">${escapeHtml(r.file)}</a>`
+        : escapeHtml(r.file);
+      tr.innerHTML = `
+        <td>${pdfTd}</td>
+        ${formatScoreTableCell(r.score)}
+        <td class="${fitCls}">${fitLabel}</td>
+        <td class="sec">${sec}</td>`;
+      $rows.appendChild(tr);
+
+      const explanation = (r.explanation || "").trim();
+      if (explanation) {
+        const trExp = document.createElement("tr");
+        trExp.className = "explain-row";
+        trExp.innerHTML = `<td colspan="4" class="explain explain-from-score-col"><span class="explain-lead">Обоснование AI</span>${formatExplanationHtml(explanation)}</td>`;
+        $rows.appendChild(trExp);
+      }
+    }
+
+    function setActiveBadge(id) {
+      selectedVacancyId = id;
+      for (const el of $badges.querySelectorAll(".badge")) {
+        el.classList.toggle("active", el.dataset.id === id);
+      }
+    }
+
+    async function loadVacancyBadges() {
+      try {
+        const r = await fetch("/api/vacancies");
+        const j = await r.json();
+        const files = Array.isArray(j.files) ? j.files : [];
+        $badges.innerHTML = "";
+        for (const f of files) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "badge";
+          b.dataset.id = f.id;
+          b.textContent = f.label;
+          b.addEventListener("click", () => {
+            setActiveBadge(f.id);
+            logLine("t", `выбрана вакансия: ${f.label}`);
+          });
+          $badges.appendChild(b);
+        }
+      } catch {
+        $badges.innerHTML = "";
+      }
+    }
+
+    let timerInterval = null;
+    let timerCtxRef = null;
+
+    function startAnalysisTimer(ctx) {
+      stopTimer();
+      timerCtxRef = ctx;
+      timerInterval = setInterval(() => {
+        const c = timerCtxRef;
+        if (!c) return;
+        const total = (Date.now() - c.t0) / 1000;
+        let candLine;
+        if (c.candStart != null) {
+          const cur = (Date.now() - c.candStart) / 1000;
+          candLine = `Кандидат (сейчас): ${formatMinSec(cur, 1)}`;
+        } else if (c.lastCandSec != null) {
+          candLine = c.lastCached
+            ? `Кандидат (последний): кэш`
+            : `Кандидат (последний, ИИ): ${formatMinSec(c.lastCandSec, 1)}`;
+        } else {
+          candLine = "Кандидат: подготовка…";
+        }
+        const prog =
+          c.batchTotal > 0
+            ? `\nПроверено резюме: ${c.checkedCount ?? 0} из ${c.batchTotal}`
+            : "";
+        $state.textContent = `Общее время: ${formatMinSec(total, 1)}\n${candLine}${prog}`;
+      }, 100);
+    }
+
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      timerCtxRef = null;
+    }
+
+    function showStopBtn(show) {
+      $stop.style.display = show ? "" : "none";
+      $run.style.display = show ? "none" : "";
+      $stop.textContent = "Остановить";
+      if ($nuggetLoader) {
+        $nuggetLoader.hidden = !show;
+        $nuggetLoader.setAttribute("aria-hidden", show ? "false" : "true");
+      }
+    }
+
+    async function streamAnalyze() {
+      $run.disabled = true;
+      $rows.innerHTML = "";
+      $log.innerHTML = "";
+      $summary.style.display = "none";
+      $summary.textContent = "";
+      abortController = new AbortController();
+
+      const take = Math.max(1, parseInt($take.value, 10) || 1);
+
+      if (!selectedVacancyId) {
+        logLine("e", "Выберите вакансию");
+        $run.disabled = false;
+        showStopBtn(false);
+        stopTimer();
+        $state.textContent = "";
+        return;
+      }
+
+      showStopBtn(true);
+
+      const tickCtx = {
+        t0: Date.now(),
+        candStart: null,
+        lastCandSec: null,
+        lastCached: false,
+        batchTotal: 0,
+        checkedCount: 0,
+      };
+      startAnalysisTimer(tickCtx);
+
+      const res = await fetch("/api/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ take, vacancyId: selectedVacancyId }),
+        signal: abortController.signal,
+      });
+
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let totalSec = null;
+      let batchTotal = 0;
+      let checkedCount = 0;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop() || "";
+        for (const block of parts) {
+          const line = block.trim().split("\n").find((l) => l.startsWith("data: "));
+          if (!line) continue;
+          const json = line.slice(6);
+          let ev;
+          try { ev = JSON.parse(json); } catch { continue; }
+
+          if (ev.type === "status") logLine("t", `${ev.message} · прошло ${ev.elapsed.toFixed(2)} с`);
+          if (ev.type === "batch") {
+            logLine("", `К обработке: ${ev.total} PDF из ${ev.resumesDir}`);
+            batchTotal = Number(ev.total) || 0;
+            checkedCount = 0;
+            tickCtx.batchTotal = batchTotal;
+            tickCtx.checkedCount = 0;
+          }
+          if (ev.type === "resume_start") {
+            tickCtx.candStart = Date.now();
+            const hint = ev.cached ? "уже оценено, без ИИ" : "оценка ИИ…";
+            logLine("", `${ev.index}/${ev.total} · ${ev.file} · ${hint}`);
+          }
+          if (ev.type === "resume_result") {
+            tickCtx.lastCandSec = Number(ev.seconds) || 0;
+            tickCtx.lastCached = Boolean(ev.cached);
+            tickCtx.candStart = null;
+            checkedCount += 1;
+            tickCtx.checkedCount = checkedCount;
+            const timePart = ev.cached ? "кэш" : `${Number(ev.seconds).toFixed(2)} с (ИИ)`;
+            logLine(ev.error ? "e" : "", `${ev.file} · ${formatScorePointsPlain(ev.score)} · ${timePart}`);
+            addRow(ev);
+          }
+          if (ev.type === "summary") {
+            totalSec = ev.totalSeconds;
+            const n = ev.rows.length;
+            $summary.style.display = "block";
+            $summary.innerHTML = `Итого: <strong>${n}</strong> резюме · полное время обработки <strong>${formatMinSec(totalSec, 1)}</strong>`;
+          }
+          if (ev.type === "error") {
+            stopTimer();
+            showStopBtn(false);
+            $run.disabled = false;
+            $state.textContent = "ошибка";
+            logLine("e", ev.message);
+          }
+          if (ev.type === "done") {
+            stopTimer();
+            const tot = ev.totalSeconds ?? totalSec ?? 0;
+            $state.textContent = `Готово.\nОбщее время: ${formatMinSec(tot, 1)}`;
+          }
+        }
+      }
+
+      $run.disabled = false;
+      showStopBtn(false);
+    }
+
+    $run.addEventListener("click", () => {
+      streamAnalyze().catch((e) => {
+        stopTimer();
+        showStopBtn(false);
+        if (e.name === "AbortError") {
+          logLine("e", "Проверка остановлена");
+          $state.textContent = "остановлено";
+        } else {
+          logLine("e", e.message);
+          $state.textContent = "ошибка";
+        }
+        $run.disabled = false;
+      });
+    });
+
+    $stop.addEventListener("click", () => {
+      if (abortController) abortController.abort();
+    });
+
+    // --- анализ ---
+    document.querySelectorAll(".sort-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".sort-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        analysisSort = btn.dataset.sort;
+        if (cachedResults) renderAnalysis(cachedResults);
+      });
+    });
+
+    async function loadAnalysis() {
+      try {
+        const r = await fetch("/api/results");
+        cachedResults = await r.json();
+        renderAnalysis(cachedResults);
+      } catch {
+        $analysisContent.innerHTML = '<div class="sub">Нет данных</div>';
+      }
+    }
+
+    $analysisContent.addEventListener("click", async (ev) => {
+      const btn = ev.target.closest(".check-delete");
+      if (!btn) return;
+      const file = btn.dataset.file;
+      const vacancyId = btn.dataset.vacancyId ?? "";
+      const timestamp = btn.dataset.ts ?? "";
+      if (!file || !timestamp) return;
+      if (!confirm("Удалить эту оценку из базы?")) return;
+      try {
+        const r = await fetch("/api/results/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file, vacancyId, timestamp }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.message || r.statusText);
+        await loadAnalysis();
+      } catch (e) {
+        alert(e.message || String(e));
+      }
+    });
+
+    function renderAnalysis(all) {
+      // фильтр-бейджи
+      const vacancies = [...new Set(all.map(r => r.vacancyId))];
+      $filterBadges.innerHTML = "";
+      for (const vid of vacancies) {
+        const lbl = vid.replace(/\.[^.]+$/, "");
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "badge" + (analysisFilter === vid ? " active" : "");
+        b.textContent = lbl;
+        b.addEventListener("click", () => {
+          analysisFilter = vid;
+          $filterAll.classList.remove("active");
+          renderAnalysis(all);
+        });
+        $filterBadges.appendChild(b);
+      }
+      $filterAll.className = "badge" + (analysisFilter === null ? " active" : "");
+      $filterAll.onclick = () => { analysisFilter = null; renderAnalysis(all); };
+
+      // дедупликация: для каждой пары файл+вакансия оставляем последний результат
+      const deduped = new Map();
+      for (const r of all) {
+        const key = `${r.file}||${r.vacancyId}`;
+        deduped.set(key, r);
+      }
+      const unique = [...deduped.values()];
+
+      // фильтрация
+      const filtered = analysisFilter ? unique.filter(r => r.vacancyId === analysisFilter) : unique;
+
+      // группировка по файлу
+      const grouped = {};
+      for (const r of filtered) {
+        if (!grouped[r.file]) grouped[r.file] = [];
+        grouped[r.file].push(r);
+      }
+
+      // сортировка
+      const candidates = Object.entries(grouped).sort((a, b) => {
+        if (analysisSort === "score-desc") {
+          return Math.max(...b[1].map(x => x.score ?? 0)) - Math.max(...a[1].map(x => x.score ?? 0));
+        }
+        if (analysisSort === "score-asc") {
+          return Math.max(...a[1].map(x => x.score ?? 0)) - Math.max(...b[1].map(x => x.score ?? 0));
+        }
+        if (analysisSort === "date-desc") {
+          const da = Math.max(...a[1].map(x => new Date(x.timestamp || 0).getTime()));
+          const db = Math.max(...b[1].map(x => new Date(x.timestamp || 0).getTime()));
+          return db - da;
+        }
+        if (analysisSort === "date-asc") {
+          const da = Math.min(...a[1].map(x => new Date(x.timestamp || 0).getTime()));
+          const db = Math.min(...b[1].map(x => new Date(x.timestamp || 0).getTime()));
+          return da - db;
+        }
+        if (analysisSort === "name-asc") {
+          return a[0].localeCompare(b[0]);
+        }
+        return 0;
+      });
+
+      if (!candidates.length) {
+        $analysisContent.innerHTML = '<div class="sub">Нет результатов</div>';
+        return;
+      }
+
+      let html = "";
+      for (const [file, checks] of candidates) {
+        const pdfUrl = `/api/resumes/${encodeURIComponent(file)}`;
+        html += `<div class="candidate-group">`;
+        for (const c of checks) {
+          const fitCls = c.value === true ? "fit-yes" : c.value === false ? "fit-no" : "fit-unk";
+          const fitLabel = c.value === true ? "подходит на вакансию" : c.value === false ? "не подходит на вакансию" : "—";
+          const vacRaw = (c.vacancyLabel || "").trim() || (c.vacancyId ? String(c.vacancyId).replace(/\.[^.]+$/, "") : "");
+          const rowDate = c.timestamp ? new Date(c.timestamp).toLocaleString("ru") : "";
+          const expl = String(c.explanation || "").trim();
+          html += `<div class="check-entry">`;
+          html += `<div class="check-entry-main">`;
+          html += `<div class="check-summary">`;
+          html += `<a class="pdf-link" href="${escapeAttr(pdfUrl)}" target="_blank" rel="noopener">${escapeHtml(file)}</a>`;
+          html += `<span class="check-sep">·</span>`;
+          html += formatScoreInlineHtml(c.score);
+          html += `<span class="check-sep">·</span>`;
+          html += `<span class="${fitCls}">${fitLabel}</span>`;
+          if (vacRaw) {
+            html += `<span class="check-sep">·</span><span class="check-vac-paren">(${escapeHtml(vacRaw)})</span>`;
+          }
+          html += `</div>`;
+          html += `<div class="check-entry-actions">`;
+          if (rowDate) html += `<span class="check-row-date">${escapeHtml(rowDate)}</span>`;
+          if (c.timestamp) {
+            html += `<button type="button" class="check-delete" title="Удалить из базы" aria-label="Удалить запись" data-file="${escapeAttr(c.file)}" data-vacancy-id="${escapeAttr(String(c.vacancyId ?? ""))}" data-ts="${escapeAttr(String(c.timestamp))}">×</button>`;
+          }
+          html += `</div>`;
+          html += `</div>`;
+          if (expl) {
+            html += `<div class="check-explain-block"><span class="explain-lead">Обоснование AI</span><div class="check-explain-text">${formatExplanationHtml(expl, { flow: true })}</div></div>`;
+          }
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
+      $analysisContent.innerHTML = html;
+    }
+
+    // --- инициализация ---
+    loadVacancyBadges();
+
+    (async function loadAppMeta() {
+      const el = document.getElementById("appMeta");
+      if (!el) return;
+      const base = "Разработка ИТЦ. v.2.1.1";
+      try {
+        const r = await fetch("/api/config");
+        const j = await r.json();
+        const m = String(j.ollamaModel || "").trim();
+        el.textContent = m ? `${base} · модель: ${m}` : base;
+      } catch {
+        el.textContent = base;
+      }
+    })();
+
+    (async function loadResumeCount() {
+      try {
+        const r = await fetch("/api/resumes/count");
+        const j = await r.json();
+        const count = j.count || 0;
+        document.getElementById("totalCount").textContent = `из ${count}`;
+        $take.max = count;
+        if (parseInt($take.value, 10) > count) $take.value = count;
+      } catch {}
+    })();
+
+    // live reload
+    (function connectLiveReload() {
+      const es = new EventSource("/api/livereload");
+      es.onmessage = () => location.reload();
+      es.onerror = () => { es.close(); setTimeout(connectLiveReload, 2000); };
+    })();
+  </script>
+</body>
+</html>
