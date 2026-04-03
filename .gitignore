@@ -4,4 +4,3 @@ resumes
 .env.local
 *.log
 .DS_Store
-results.json
